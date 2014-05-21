@@ -1,0 +1,135 @@
+﻿*. 명함관리 프로그램 만드는 순서
+===============    준비단계    ============================================
+  1. VO 만들기 ( NameCardDAO.java)
+    http://choijaehyuk.com/128 -> VO, DTO, DAO에 관한 간단한 개념 정리
+    http://definejava.net/55
+
+  2. MySQL을 이용해서 DB를 만들고,
+    그 DB를 다루는 클래스 만들기(DBUtil.java)
+	2-1. DB를 연결해주기위한 메소드 작성
+	    - public static Connection getConnection()
+    	2-2. DB를 다 사용한 뒤, 세가지 클래스를 닫아줘야 함
+	    Connection, Statement, ResultSet
+ 	    오버라이딩을 통해 매개변수(인자값)은 다르게 한 똑같은 메소드 작성.
+	    - public static void close(Connection conn)
+	      public static void close(Statement stmt)
+	      public static void close(ResultSet rs)
+	혹시나 DB에서 잘못실행되었을지도 모르는 명령들 취소
+	    // 롤백 
+	    - public static void rollback(Connection conn)
+
+  3. DB와 VO를 관리하는 DAO 클래스 작성 (NameCardDAO.java)
+    DB에서 사용하게될 SQL문(쿼리문) 하나당 메소드 한개 작성.
+    현재까지 명함관리프로젝트는 7개의 쿼리문 사용
+	3-1. 전체개수를 구해오는 메소드
+	    - public int getCount(Connection conn)
+	    쿼리문 : String sql = "select count(*) from namecard";
+
+ 	3-2. 1 개의 레코드를 추가하는 메소드
+ 	    - public int insert(Connection conn, NameCardVO nameCard)
+	    쿼리문 : String sql = "insert into namecard (name,address,tel,company, email) values (?,?,?,?,?)";
+
+ 	3-3. 1 개의 레코드를 Index로 검색해서 가져오는 메소드
+ 	    - public NameCardVO selectByIdx(Connection conn, int idx)
+	    쿼리문 : String sql = "select * from namecard where idx=?";
+
+	3-4 1 개의 레코드를 이름으로 검색해서 가져오는 메소드
+	    - public NameCardVO selectByName(Connection conn, String name)
+	    쿼리문 : String sql = "select * from namecard where name=?";
+
+	3-5 1 개의 레코드를 그룹으로 검색해서 가져오는 메소드
+	    - public ArrayList<NameCardVO> selectByGroup(Connection conn, int group)
+	    쿼리문 : String sql = "select * from namecard where groups=?";
+
+ 	3-6. 모든 레코드를 가져오는 메소드(나중에 페이징 작업을 해주어야 한다)
+ 	    - public ArrayList<NameCardVO> selectByList(Connection conn)
+	    쿼리문 : String sql = "select * from namecard";
+
+ 	3-7. 1 개의 레코드를 삭제 메소드(idx로 지우기)
+ 	    - public int delete(Connection conn, int idx)
+	    쿼리문 : String sql = "delete from namecard where idx=?";
+
+ 	3-8. 1 개의 레코드를 수정 메소드
+ 	    - public int update(Connection conn, NameCardVO nameCard)
+	    쿼리문 : String sql = "update namecard set address=?, tel=? , company=?, email=? where idx = ?";
+
+ 	3-9. 마지막 인덱스값 가져오기( 테이블에 추가할경우 index
+ 	    - public int lastIndex(Connection conn)
+	    쿼리문 : String sql = "select * from namecard order by idx desc limit 1";
+
+  4. Service 만들어주기
+    현재 프로젝트에서 Service를 만들어주는 이유는 DB를 사용할때마다 연결해주고, 사용하고 닫아주는 작업을
+    단 한번에 해주기 위함이다.
+    현재 프로젝트에서 만들어진 서비스
+	4.1 InsertService.java(삽입)
+
+	4.2 DeleteService.java(삭제) 
+	    - index로 삭제
+
+	4.3 UpdateNameCard.java(수정)
+
+	4.4 SelectNameCard.java(조회)
+	    - 1개의 레코드(데이터)값 조회
+	    - 전체조회
+	    - 마지막 인덱스값 조회
+
+===============    프로젝트 시작 단계    ============================================
+  5. Main프레임 작성하기
+    5.1 Main의 생성자를 통해 프레임을 만들어준다.
+	private JLabel title;	// BoderLayout.NORTH 영역에 새겨질 제목
+	private JLabel search;	// 검색 JLabel
+	private JTextField search_text;	// 검색할 단어를 입력받는 곳
+	private JButton add_card,update_card,del_card;	// 추가, 수정, 삭제 버튼
+	private JButton exitBtn;	// 종료버튼
+	private JPanel center;	// BorderLayout의 CENTER 영역에 들어갈 판(?) - JTable을 위한 Panel
+	private JTable table;	// 명함 목록을 보여줄 Table(표) 
+	private DefaultTableModel model; //DefaultTableModel은 JTable의 기본 형태를 제공하는 클래스
+	//--------BoderLayout.NORTH 영역---------------------------------
+	제목, 검색Label, 검색TextField
+		
+	//--------BoderLayout.CENTER 영역---------------------------------
+	JTable 
+
+	//--------BoderLayout.SOUTH 영역---------------------------------
+	add_card 버튼, update_card 버튼, del_card 버튼
+
+    5.2 add_card 버튼, update_card 버튼, del_card 버튼의 리스너(ActionListener) 작성.
+      	위 세개의 버튼을 눌렀을때 발생하는 이벤트(동작)들에 대한 내용을 작성한다.
+	add_card 버튼
+	 - 명함을 추가하는 창을 띄운다.
+	update_card 버튼
+	 - 수정하는 창을 띄우면서 JTable에 있는 값을 명함 수정하는 창에 전달해준다.
+	del_card 버튼
+	 - JTable 목록에서 선택한 행을 지워주면서 DB에도 해당되는 데이터(레코드)를 지운다.
+
+  6. 명함을 추가하는 클래스(AddNameCard.java)
+    6.1 명함을 추가하는 프레임 만들기
+	JLabel name_jl1;	// 이름 Label
+	JLabel addr_jl2;	// 주소 Label
+	JLabel tel_jl3;		// 번호 Label
+	JLabel comp_jl4;	// 회사 Label
+	JLabel emai_jl5;	// 이메일 Label
+	JButton btn1;		// 확인버튼(DB와 JTable에 추가한다)
+	JButton btn2;		// 취소버튼(창을 닫는다)
+
+	JTextField name_tf1;	// 이름 입력
+	JTextField addr_tf2;	// 주소 입력
+	JTextField tel_tf3;		// 번호 입력
+	JTextField comp_tf4;	// 회사 입력
+	JTextField emai_tf5;	// 이메일 입력
+	
+	JTable table;		// Main에서 전달된 table을 저장할 변수
+	
+    6.2 확인과 취소 버튼의 리스너 작성
+	확인 버튼
+	- 확인 버튼 클릭시 JTable영역과 DB영역 두 곳 모두 데이터를 추가한다.
+	  JTable은 윈도우 창에서 우리에게 보여질 데이터 베이스나 마찬가지이다.
+
+	취소 버튼 
+	  명함관리 추가 창을 닫는다.
+===============================================================
+
+현재는 여기까지
+
+현재 프로젝트는 추가와 삭제만 되고, 일요일중으로 수정부분 작성
+
